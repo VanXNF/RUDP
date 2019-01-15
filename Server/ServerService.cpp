@@ -221,9 +221,9 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
                 cerr << strerror(errno) << endl;
                 exit(5);
             } else if (readyDescriptors > 0) {
-                // Case: ACK
+                // ACK 判断
                 ackNo = readAck(socketFD, clientDetails);
-                cout << "### Ack Event " << endl;
+                cout << "Ack Event " << endl;
                 if (sendBase < ackNo) {
                     // 创建新 ACK
                     cout << "New ACK: " << ackNo << endl;
@@ -242,7 +242,7 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
                         left = 0;
                         if (congestion->cwnd >= congestion->ssthresh && congestion->ssthresh != -1) {
                             congestion->isSlowStart = false; // congestion avoidance
-                            cout << "**** Entering Congestion Avoidance mode ****" << endl;
+                            cout << "Entering Congestion Avoidance mode" << endl;
                         }
                         if (congestion->isSlowStart) {
                             congestion->updateSlowStart();
