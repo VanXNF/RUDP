@@ -43,17 +43,14 @@ bool ServerService::startService() {
         recvfrom(serverSocketUDP->getSocket(), buffer, MTU, 0, (struct sockaddr *) &clientDetails, &clientLength);
         ServerSegment *segment = parseRequest(buffer);
         if (segment->data && segment->ackFlag == 'N') {
-            cout << "received: ";
+            cout << "Received: ";
             cout << (char *) segment->data << endl;
             string key = (char *) segment->data;
-            for (int i = 0; i < 1000; ++i) {
-                key = "i received " + key;
-            }
+            key = "I received " + key;
+//            todo 对收到信息做处理，并响应请求
             if (sendSegments((byte *) key.c_str(), serverSocketUDP->getSocket(), clientDetails, receiverWindowSize)) {
                 flag = true;
             }
-            broadcastFD = -1;
-//            closeBroadcastService();
         }
         if (flag) {
             cout << "Sent all segments. Closing server connection." << endl;
@@ -188,16 +185,15 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
 
     while (true) {
         sendDataNum = (int) min(congestion->cwnd, (double) recvWindowSize);
-//        todo 输出提示信息修改
         if (congestion->isSlowStart) {
-            cout << "-----------	Sending Packets in mode: Slow Start 	-----------" << endl;
-            cout << "\tMaximum Packets that will be sent:" << sendDataNum << endl;
+            cout << "Sending Packets in mode: Slow Start" << endl;
+            cout << "Maximum Packets that will be sent:" << sendDataNum << endl;
         } else {
-            cout << "-----------	Sending Packets in mode: Congestion Avoidance 	-----------" << endl;
-            cout << "\tMaximum Packets that will be sent:" << sendDataNum << endl;
+            cout << "Sending Packets in mode: Congestion Avoidance" << endl;
+            cout << "Maximum Packets that will be sent:" << sendDataNum << endl;
         }
 
-        cout << "\tRetransmissionTime-Out: " << congestion->RTO << endl;
+        cout << "RetransmissionTime-Out: " << congestion->RTO << endl;
         window.clear();
 
         //向滑动窗格填充数据
@@ -230,7 +226,7 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
                 cout << "### Ack Event " << endl;
                 if (sendBase < ackNo) {
                     // 创建新 ACK
-                    cout << "\tNew ACK: " << ackNo << endl;
+                    cout << "New ACK: " << ackNo << endl;
                     sendBase = ackNo;
                     if (window.size() > 0 && sendBase - (MTU - HEADER_LEN) >= window.front()->seqNo) {
                         while (!window.empty()) {
@@ -260,7 +256,6 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
                     congestion->dupAck++;
                     cout << "Dup ACK: " << ackNo << " ACK Count:" << congestion->dupAck << endl;
                     if (congestion->dupAck >= 3) {
-                        // retransmit & mark to not calculate timeout
                         // 重传 3 次后并取消计算重传时间样本
                         retransmit(ackNo, socketFD, clientDetails, sendUnit);
                         packetDropped++;
@@ -272,21 +267,21 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
                                 }
                             }
                         }
-                        congestion->slowStart(); // Back to Slow Start
+                        congestion->slowStart();
                         congestion->dupAck = 0;
                         left = window.size();
                     }
                 }
             } else if (readyDescriptors == 0) {
                 // 超时
-                cout << "### Timeout Event " << endl;
+                cout << "Timeout Event " << endl;
                 if (timeValue.tv_sec == 0 && timeValue.tv_usec == 0) {
                     // Loss occurred go back to slow start
                     packetDropped += window.size();
                     if (window.size() != 0) {
                         left = window.size();
                         retransmit(ackNo, socketFD, clientDetails, sendUnit);
-                        cout << "\tRetransmitting : " << window.front()->seqNo << endl;
+                        cout << "Retransmitting : " << window.front()->seqNo << endl;
                         window.clear();
                     }
                     congestion->slowStart();
@@ -295,15 +290,11 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
             }
         }
 
-        cout << "\t\tPercentage of Packets Sent: " << SlideWindowDataNum - left << "/" << SlideWindowDataNum << " = "
+        cout << "Percentage of Packets Sent: " << SlideWindowDataNum - left << "/" << SlideWindowDataNum << " = "
              << ((float) (SlideWindowDataNum - left) / SlideWindowDataNum) * 100 << endl;
         SlideWindowDataNum = 0, left = 0;
         if ((seqNo - initSeqNo) > sendUnit->dataSize || (ackNo - initSeqNo) > sendUnit->dataSize) {
-            // check for window size before break.
-            // Last Packet has been sent.
-
             cout << endl << "Last Packet has been delivered & All ACKs have been received" << endl;
-            // call another function to make sure all ack has been recvd.
             break;
         }
     }
@@ -316,7 +307,6 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
 struct sockaddr_in ServerService::initBroadcast(int port) {
     struct sockaddr_in peerAddr;
     const int opt = 1;
-//    char msg[100] = "Msg from udp broadcast client!";
     int ret = 0;
 
     bzero(&peerAddr, sizeof(struct sockaddr_in));
@@ -326,23 +316,24 @@ struct sockaddr_in ServerService::initBroadcast(int port) {
 
     broadcastFD = socket(AF_INET, SOCK_DGRAM, 0);
     if (broadcastFD == -1) {
-        cout << "Create socket fail" << endl;
+        cout << "Create Broadcast Socket Fail" << endl;
         exit(1);
     }
 
     ret = setsockopt(broadcastFD, SOL_SOCKET, SO_BROADCAST, (char *)&opt, sizeof(opt));
     if (ret == -1) {
-        cout << "Set socket to broadcast format fail" << endl;
+        cout << "Set Socket To Broadcast Format Fail" << endl;
         exit(2);
     }
     return peerAddr;
 }
 
 void ServerService::startBroadcast(struct sockaddr_in *peerAddr, char* msg, int sleepSecond) {
+    //    char msg[100] = "Msg from udp broadcast client!";
     if (-1 != sendto(broadcastFD, msg, sizeof(msg), 0, (struct sockaddr *) peerAddr, sizeof(struct sockaddr_in))) {
-        cout << "Send msg success" << endl;
+        cout << "Send Broadcast Success" << endl;
     } else {
-        cout << "Send msg error" << endl;
+        cout << "Send Broadcast Error" << endl;
     }
     sleep(sleepSecond);
 }
@@ -362,13 +353,13 @@ void ServerService::receiveBroadcast(int port, char* message) {
 
     broadcastFD = socket(AF_INET, SOCK_DGRAM, 0);
     if (broadcastFD == -1) {
-        cout << "Create sock fail" << endl;
+        cout << "Create Broadcast Sock Fail" << endl;
         return;
     }
 
     ret = bind(broadcastFD, (struct sockaddr *) &ownAddr, sizeof(struct sockaddr_in));
     if (ret == -1) {
-        cout << "Bind addr fail" << endl;
+        cout << "Bind Broadcast Address Fail" << endl;
         return;
     }
 
@@ -376,15 +367,15 @@ void ServerService::receiveBroadcast(int port, char* message) {
         ret = recvfrom(broadcastFD, recvMsg, sizeof(recvMsg), 0, (struct sockaddr *) &peerAddr, &peerAddrLen);
         if (ret > 0) {
             inet_ntop(AF_INET, &peerAddr.sin_addr.s_addr, peerName, sizeof(peerName));
-            printf("Recv from %s, msg[%s]\n", peerName, recvMsg);
             if (!strcmp("0.0.0.0", peerName)) {
                 continue;
             } else {
+                printf("Receive from %s, msg:%s\n", peerName, recvMsg);
                 memcpy(message, peerName, strlen(peerName));
                 break;
             }
         } else {
-            cout << "Receive message error" << endl;
+            cout << "Receive Broadcast Message Error" << endl;
         }
     }
     bzero(recvMsg, sizeof(recvMsg));

@@ -20,7 +20,7 @@ void getLocalIP(char* addressBuffer) {
         }
         ifAddrStruct=ifAddrStruct->ifa_next;
     }
-    cout << addressBuffer << endl;
+//    cout << addressBuffer << endl;
 }
 
 void getBoardcastIP(char* addressBuffer) {
@@ -34,5 +34,5 @@ void getBoardcastIP(char* addressBuffer) {
         }
         ifAddrStruct=ifAddrStruct->ifa_next;
     }
-    cout << addressBuffer << endl;
+//    cout << addressBuffer << endl;
 }

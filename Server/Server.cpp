@@ -12,14 +12,14 @@ int main(int argc, char const *argv[]) {
 //    cin >> port >> size;
     ServerService service = ServerService(port, size);
 
-    char msg[20] = "BROADCAST";
+    char msg[100] = "BROADCAST FROM SERVER";
     //初始化广播
     struct sockaddr_in peerAddr = service.initBroadcast(9001);
     //发送单条广播
-    service.startBroadcast(&peerAddr, msg);
-    service.startBroadcast(&peerAddr, msg);
     service.startBroadcast(&peerAddr, msg, 5);
-    service.startBroadcast(&peerAddr, msg);
+    service.startBroadcast(&peerAddr, msg, 4);
+    service.startBroadcast(&peerAddr, msg, 3);
+    service.startBroadcast(&peerAddr, msg, 2);
     service.startBroadcast(&peerAddr, msg);
     service.startBroadcast(&peerAddr, msg);
     service.startService();
