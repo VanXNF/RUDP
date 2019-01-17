@@ -256,7 +256,7 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
                     congestion->dupAck++;
                     cout << "Dup ACK: " << ackNo << " ACK Count:" << congestion->dupAck << endl;
                     if (congestion->dupAck >= 3) {
-                        // 重传 3 次后并取消计算重传时间样本
+                        // 三次收到重复 ACK 后立即重传
                         retransmit(ackNo, socketFD, clientDetails, sendUnit);
                         packetDropped++;
                         cout << "Retransmitting : " << ackNo << endl;
