@@ -5,7 +5,7 @@ using namespace std;
 Congestion::Congestion(int advertisedSize) {
     this->advertisedSize = advertisedSize;
     this->cwnd = 1;
-    this->ssthresh = 64;
+    this->ssthresh = 16;
     this->dupAck = 0;
     this->isSlowStart = true;
     this->RTTs = INIT_SEC;
@@ -20,6 +20,11 @@ void Congestion::updateRTT(double start, double end) {
     RTTs = (1.0 - a) * RTTs + (a * newSampleRTT);
     RTTd = (1.0 - b) * RTTd + (b * abs(RTTs - newSampleRTT));
     RTO = RTTs + 4 * RTTd;
+}
+
+void Congestion::updateRTO() {
+    int y = 2;
+    RTO = y * RTO;//重传了则将RTO翻y倍
 }
 
 void Congestion::slowStart() {

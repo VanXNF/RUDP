@@ -19,6 +19,8 @@ public:
 
     void updateRTT(double start, double end);
 
+    void updateRTO();
+
     void slowStart();
 
     void updateSlowStart();

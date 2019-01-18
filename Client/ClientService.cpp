@@ -132,7 +132,7 @@ bool ClientService::receiveResponse(int socketFD, struct sockaddr_in serverDetai
 
     struct timeval tv;
     while (true) {
-        tv.tv_sec = 3; // 设置超时时间为3秒
+        tv.tv_sec = 2; // 设置超时时间为3秒
         tv.tv_usec = 0;
         setsockopt(socketFD, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
@@ -193,7 +193,7 @@ bool ClientService::receiveResponse(int socketFD, struct sockaddr_in serverDetai
                 continue;
             }
 
-            // 检查数据包是否失序
+            // 检查数据包是否失序, 若失序，则重置期望序号为缺失数据包序号
             if (receiverWindow.front()->sequenceNumber != -1) {
                 while (!receiverWindow.empty()) {
                     if (receiverWindow.front()->sequenceNumber == -1) break;
@@ -204,7 +204,7 @@ bool ClientService::receiveResponse(int socketFD, struct sockaddr_in serverDetai
             }
 
             // 发送确认 ACK, 设置 ACK 标志位为 TRUE
-            sendBuffer = prepareAck(expectedSeqNo + 1, TRUE);
+            sendBuffer = prepareAck(expectedSeqNo, TRUE);
             sendPacket(sendBuffer, socketFD, serverDetails);
             memset(receivedBuffer, 0, MTU);
             // 如果收到含有结束标记的数据包且接收窗口已处理完毕并清空

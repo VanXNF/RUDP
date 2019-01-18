@@ -47,6 +47,9 @@ bool ServerService::startService() {
             cout << (char *) segment->data << endl;
             string key = (char *) segment->data;
             key = "I received " + key;
+            for (int i = 0; i < 200; ++i) {
+                key += "123 hjg ghjfhdjg hj cjchjfghjcghjc   yjccgyjvghjvg jyy yjcgyj vyj";
+            }
 //            todo 对收到信息做处理，并响应请求
             if (sendSegments((byte *) key.c_str(), serverSocketUDP->getSocket(), clientDetails, receiverWindowSize)) {
                 flag = true;
@@ -54,7 +57,7 @@ bool ServerService::startService() {
         }
         if (flag) {
             cout << "Sent all segments. Closing server connection." << endl;
-            break;
+//            break;
         }
     }
 }
@@ -258,6 +261,7 @@ ServerService::sendSegments(byte *data, int socketFD, struct sockaddr_storage cl
                     if (congestion->dupAck >= 3) {
                         // 三次收到重复 ACK 后立即重传
                         retransmit(ackNo, socketFD, clientDetails, sendUnit);
+                        congestion->updateRTO();
                         packetDropped++;
                         cout << "Retransmitting : " << ackNo << endl;
                         if (window.size() != 0) {

@@ -26,7 +26,11 @@ int main(int argc, char const *argv[]) {
     service.setServerIP(message);
     cout << "Please input data:" << endl;
     cin >> raw;
-    service.setData(raw);
-    service.startService();
-    cin >> raw;
+    while (true) {
+        service.setData(raw);
+        service.startService();
+        cout << "Please input data:" << endl;
+        cin >> raw;
+    }
+
 }
